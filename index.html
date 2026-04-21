@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>政府計畫配對系統</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #ffffff;
+      --bg2: #f5f5f3;
+      --bg3: #efefec;
+      --text: #1a1a18;
+      --text2: #6b6b66;
+      --text3: #9c9a92;
+      --border: rgba(0,0,0,0.1);
+      --border2: rgba(0,0,0,0.18);
+      --blue-bg: #e6f1fb;
+      --blue: #185fa5;
+      --green-bg: #eaf3de;
+      --green: #3b6d11;
+      --amber-bg: #faeeda;
+      --amber: #854f0b;
+      --radius: 8px;
+      --radius-lg: 12px;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1c1c1a;
+        --bg2: #252522;
+        --bg3: #2e2e2b;
+        --text: #e8e6df;
+        --text2: #9c9a92;
+        --text3: #6b6b66;
+        --border: rgba(255,255,255,0.1);
+        --border2: rgba(255,255,255,0.18);
+        --blue-bg: #0c2d4a;
+        --blue: #85b7eb;
+        --green-bg: #172f07;
+        --green: #97c459;
+        --amber-bg: #3a2000;
+        --amber: #ef9f27;
+      }
+    }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg3);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .container { max-width: 720px; margin: 0 auto; }
+
+    header { margin-bottom: 2rem; }
+    header h1 { font-size: 24px; font-weight: 600; margin-bottom: 6px; }
+    header p { font-size: 14px; color: var(--text2); line-height: 1.6; }
+
+    /* Steps Nav */
+    .steps-nav {
+      display: flex;
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      margin-bottom: 1.5rem;
+    }
+    .step-btn {
+      flex: 1; padding: 12px 8px; text-align: center;
+      font-size: 13px; color: var(--text2); cursor: pointer;
+      border-right: 0.5px solid var(--border);
+      background: var(--bg2); transition: all 0.15s;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+      border: none; font-family: inherit;
+    }
+    .step-btn:last-child { border-right: none; }
+    .step-btn.active { background: var(--bg); color: var(--text); font-weight: 500; }
+    .step-btn.done { color: var(--green); }
+    .step-num {
+      width: 20px; height: 20px; border-radius: 50%;
+      background: var(--border); font-size: 11px;
+      display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    }
+    .step-btn.active .step-num { background: var(--blue-bg); color: var(--blue); }
+    .step-btn.done .step-num { background: var(--green-bg); color: var(--green); }
+
+    /* Cards */
+    .card {
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1.25rem;
+      margin-bottom: 12px;
+    }
+    .card-title {
+      font-size: 12px; font-weight: 500; color: var(--text2);
+      text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 14px;
+    }
+
+    /* Form */
+    .field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .field-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+    .field { display: flex; flex-direction: column; gap: 4px; }
+    .field.full { grid-column: 1 / -1; }
+    label { font-size: 12px; color: var(--text2); }
+    input, select, textarea {
+      width: 100%; padding: 8px 10px;
+      border: 0.5px solid var(--border2);
+      border-radius: var(--radius);
+      background: var(--bg2); color: var(--text);
+      font-size: 14px; font-family: inherit; outline: none;
+      transition: border-color 0.15s;
+    }
+    input:focus, select:focus, textarea:focus { border-color: var(--blue); }
+    textarea { resize: none; line-height: 1.6; }
+
+    /* Chips */
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+    .chip {
+      padding: 5px 12px; border-radius: 20px;
+      border: 0.5px solid var(--border2);
+      background: transparent; font-size: 13px; color: var(--text2);
+      cursor: pointer; transition: all 0.15s; font-family: inherit;
+    }
+    .chip:hover { border-color: var(--blue); color: var(--blue); }
+    .chip.active { background: var(--blue-bg); color: var(--blue); border-color: transparent; }
+
+    /* Buttons */
+    .btn-row { display: flex; justify-content: space-between; align-items: center; margin-top: 4px; }
+    .btn-primary {
+      padding: 10px 22px; background: var(--blue-bg); color: var(--blue);
+      border: none; border-radius: var(--radius); font-size: 14px; font-weight: 500;
+      cursor: pointer; font-family: inherit; transition: opacity 0.15s;
+    }
+    .btn-primary:disabled { opacity: 0.35; cursor: not-allowed; }
+    .btn-sec {
+      padding: 10px 16px; background: transparent; color: var(--text2);
+      border: 0.5px solid var(--border2); border-radius: var(--radius);
+      font-size: 14px; cursor: pointer; font-family: inherit;
+    }
+    .hint { font-size: 12px; color: var(--text3); }
+    .char-count { font-size: 11px; color: var(--text3); text-align: right; margin-top: 4px; }
+
+    /* Tab sm */
+    .tabs-sm { display: flex; gap: 6px; margin-bottom: 10px; }
+    .tab-sm {
+      padding: 5px 12px; border-radius: 20px;
+      border: 0.5px solid var(--border2); background: transparent;
+      font-size: 12px; color: var(--text2); cursor: pointer; font-family: inherit;
+    }
+    .tab-sm.active { background: var(--blue-bg); color: var(--blue); border-color: transparent; }
+
+    /* Loading */
+    .loading { text-align: center; padding: 3rem 1rem; }
+    .spinner {
+      width: 32px; height: 32px; border: 2px solid var(--border2);
+      border-top-color: var(--blue); border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin: 0 auto 16px;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .loading-steps { display: flex; flex-direction: column; gap: 8px; margin-top: 16px; text-align: left; max-width: 280px; margin-left: auto; margin-right: auto; }
+    .l-step { font-size: 13px; color: var(--text3); display: flex; align-items: center; gap: 8px; }
+    .l-step.active { color: var(--blue); }
+    .l-step.done { color: var(--green); }
+
+    /* Results */
+    .results-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 12px; flex-wrap: wrap; gap: 8px; }
+    .results-summary { font-size: 15px; font-weight: 500; }
+    .results-sub { font-size: 13px; color: var(--text2); margin-top: 2px; }
+
+    .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 1rem; }
+    .stat-card { background: var(--bg2); border-radius: var(--radius); padding: 10px 12px; }
+    .stat-num { font-size: 22px; font-weight: 600; }
+    .stat-lbl { font-size: 11px; color: var(--text2); margin-top: 2px; }
+
+    .strengths { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 1rem; }
+    .strength-tag { padding: 4px 10px; border-radius: 20px; background: var(--green-bg); color: var(--green); font-size: 12px; }
+
+    .potential-bar { font-size: 13px; color: var(--text2); padding: 8px 12px; background: var(--bg2); border-radius: var(--radius); margin-bottom: 1rem; }
+    .potential-bar strong { color: var(--text); }
+
+    .filter-row { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; align-items: center; }
+    .filter-label { font-size: 12px; color: var(--text2); }
+    .filter-chip {
+      padding: 4px 10px; border-radius: 20px;
+      border: 0.5px solid var(--border2); background: transparent;
+      font-size: 12px; color: var(--text2); cursor: pointer; font-family: inherit;
+    }
+    .filter-chip.on { background: var(--blue-bg); color: var(--blue); border-color: transparent; }
+
+    /* Grant Card */
+    .grant-card {
+      background: var(--bg);
+      border: 0.5px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 1rem 1.25rem;
+      margin-bottom: 10px;
+    }
+    .grant-card.top-pick { border: 2px solid var(--blue); }
+    .gc-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+    .gc-title { font-size: 15px; font-weight: 600; line-height: 1.4; }
+    .gc-badges { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; flex-shrink: 0; }
+    .badge { padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 500; white-space: nowrap; }
+    .b-high { background: var(--green-bg); color: var(--green); }
+    .b-mid { background: var(--amber-bg); color: var(--amber); }
+    .b-low { background: var(--bg2); color: var(--text2); }
+    .b-top { background: var(--blue-bg); color: var(--blue); font-size: 10px; }
+    .gc-meta { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
+    .meta-tag { padding: 3px 8px; border-radius: var(--radius); font-size: 12px; background: var(--bg2); color: var(--text2); }
+    .gc-desc { font-size: 13px; color: var(--text2); line-height: 1.7; margin-bottom: 8px; }
+    .gc-reason {
+      font-size: 13px; color: var(--text2); line-height: 1.6; margin-bottom: 10px;
+      padding: 8px 10px; background: var(--bg2); border-radius: var(--radius);
+      border-left: 2px solid var(--blue);
+    }
+    .feas-bar { margin-bottom: 10px; }
+    .feas-label { display: flex; justify-content: space-between; font-size: 12px; color: var(--text2); margin-bottom: 4px; }
+    .feas-track { height: 6px; background: var(--bg2); border-radius: 3px; overflow: hidden; }
+    .feas-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+    .feas-note { font-size: 12px; color: var(--text3); margin-top: 4px; }
+    .req-list { margin-bottom: 8px; }
+    .req-item { font-size: 12px; color: var(--text2); margin-left: 14px; margin-top: 3px; }
+    .caution { font-size: 12px; color: var(--amber); display: flex; gap: 5px; margin-top: 4px; }
+    .gc-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      padding-top: 10px; border-top: 0.5px solid var(--border); margin-top: 10px;
+    }
+    .gc-amount { font-size: 14px; font-weight: 600; }
+    .gc-deadline { font-size: 12px; color: var(--text2); margin-top: 2px; }
+    .gc-actions { display: flex; gap: 8px; align-items: center; }
+    .btn-detail { font-size: 13px; color: var(--blue); background: none; border: none; cursor: pointer; font-family: inherit; }
+    .btn-apply {
+      font-size: 12px; padding: 6px 12px;
+      background: var(--blue-bg); color: var(--blue);
+      border: none; border-radius: var(--radius); cursor: pointer; font-family: inherit;
+    }
+    .no-results { text-align: center; padding: 2rem; color: var(--text2); font-size: 14px; }
+
+    @media (max-width: 500px) {
+      .field-grid, .field-grid.three { grid-template-columns: 1fr 1fr; }
+      .stats-row { grid-template-columns: repeat(3, 1fr); }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>政府計畫配對系統</h1>
+    <p>填寫廠商資料與需求，AI 自動配對適合的政府補助計畫並評估申請可行性</p>
+  </header>
+
+  <div class="steps-nav">
+    <button class="step-btn active" id="tab-1" onclick="goStep(1)">
+      <div class="step-num" id="sn-1">1</div>廠商資料
+    </button>
+    <button class="step-btn" id="tab-2" onclick="goStep(2)">
+      <div class="step-num" id="sn-2">2</div>需求描述
+    </button>
+    <button class="step-btn" id="tab-3" onclick="goStep(3)">
+      <div class="step-num" id="sn-3">3</div>配對結果
+    </button>
+  </div>
+
+  <!-- STEP 1 -->
+  <div id="step-1">
+    <div class="card">
+      <div class="card-title">基本資訊</div>
+      <div class="field-grid">
+        <div class="field"><label>公司名稱</label><input id="co-name" placeholder="例：台灣智慧科技有限公司" /></div>
+        <div class="field"><label>統一編號（選填）</label><input id="co-tax" placeholder="12345678" maxlength="8" /></div>
+        <div class="field"><label>產業別</label>
+          <select id="co-industry">
+            <option value="">請選擇</option>
+            <option>資訊軟體服務業</option><option>電子零組件製造業</option>
+            <option>機械設備製造業</option><option>生技醫療業</option>
+            <option>綠能環保業</option><option>食品農業業</option>
+            <option>文化創意業</option><option>批發零售業</option><option>其他服務業</option>
+          </select>
+        </div>
+        <div class="field"><label>公司規模</label>
+          <select id="co-size">
+            <option value="">請選擇</option>
+            <option>1–5 人（微型）</option><option>6–20 人（小型）</option>
+            <option>21–100 人（中小型）</option><option>101–499 人（中型）</option>
+            <option>500 人以上（大型）</option>
+          </select>
+        </div>
+        <div class="field"><label>設立年數</label>
+          <select id="co-age">
+            <option value="">請選擇</option>
+            <option>未滿 1 年</option><option>1–3 年</option>
+            <option>3–5 年</option><option>5–10 年</option><option>10 年以上</option>
+          </select>
+        </div>
+        <div class="field"><label>主要市場</label>
+          <select id="co-market">
+            <option value="">請選擇</option>
+            <option>台灣內銷為主</option><option>出口為主</option>
+            <option>內外銷並重</option><option>尚未有收入</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">研發與資格</div>
+      <div class="field-grid three">
+        <div class="field"><label>研發部門</label>
+          <select id="co-rd">
+            <option value="">請選擇</option>
+            <option>有獨立研發部門</option><option>有部分研發人員</option><option>無研發部門</option>
+          </select>
+        </div>
+        <div class="field"><label>補助申請經驗</label>
+          <select id="co-prev">
+            <option value="">請選擇</option>
+            <option>從未申請過</option><option>申請過但未通過</option><option>曾成功獲補助</option>
+          </select>
+        </div>
+        <div class="field"><label>年營業額</label>
+          <select id="co-rev">
+            <option value="">請選擇</option>
+            <option>未有收入</option><option>100 萬以下</option>
+            <option>100–500 萬</option><option>500 萬–1000 萬</option>
+            <option>1000 萬–1億</option><option>1億以上</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <span class="hint">步驟 1 / 3</span>
+      <button class="btn-primary" onclick="goStep(2)">下一步：需求描述 →</button>
+    </div>
+  </div>
+
+  <!-- STEP 2 -->
+  <div id="step-2" style="display:none">
+    <div class="card">
+      <div class="card-title">申請目的（可複選）</div>
+      <div class="chips" id="purpose-chips">
+        <button class="chip" onclick="toggleChip(this)">研發新產品 / 技術</button>
+        <button class="chip" onclick="toggleChip(this)">導入 AI / 數位轉型</button>
+        <button class="chip" onclick="toggleChip(this)">拓展海外市場</button>
+        <button class="chip" onclick="toggleChip(this)">設備升級 / 自動化</button>
+        <button class="chip" onclick="toggleChip(this)">招募人才</button>
+        <button class="chip" onclick="toggleChip(this)">取得認證 / 專利</button>
+        <button class="chip" onclick="toggleChip(this)">節能 / 淨零轉型</button>
+        <button class="chip" onclick="toggleChip(this)">品牌建立</button>
+        <button class="chip" onclick="toggleChip(this)">法規輔導</button>
+        <button class="chip" onclick="toggleChip(this)">資金融資</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">詳細需求描述</div>
+      <div class="tabs-sm">
+        <button class="tab-sm active" onclick="switchMode('desc',this)">業務描述</button>
+        <button class="tab-sm" onclick="switchMode('minutes',this)">會議紀錄</button>
+      </div>
+      <textarea id="main-input" rows="6" placeholder="請描述公司核心技術、產品、當前挑戰與補助目標..."></textarea>
+      <div class="char-count" id="char-count">0 字</div>
+      <div class="chips" style="margin-top:10px">
+        <span style="font-size:12px;color:var(--text3);margin-right:4px">快速範例：</span>
+        <button class="chip" onclick="fillEx('ai')">AI 新創</button>
+        <button class="chip" onclick="fillEx('green')">綠能廠商</button>
+        <button class="chip" onclick="fillEx('mfg')">傳統製造</button>
+        <button class="chip" onclick="fillEx('bio')">生技新創</button>
+        <button class="chip" onclick="fillEx('minutes')">會議紀錄</button>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn-sec" onclick="goStep(1)">← 上一步</button>
+      <button class="btn-primary" id="match-btn" onclick="startMatching()">開始 AI 配對分析 →</button>
+    </div>
+  </div>
+
+  <!-- STEP 3 -->
+  <div id="step-3" style="display:none">
+    <div id="results-area"></div>
+  </div>
+</div>
+
+<script>
+const EXAMPLES = {
+  ai:'本公司是成立3年的AI新創，專注於工廠視覺檢測系統，核心技術為深度學習瑕疵偵測，目前有8位工程師，客戶以台灣製造業為主，計畫今年切入日本市場，需要研發補助與出口輔導。',
+  green:'本公司從事太陽能模組封裝材料研發，投入5年，已有兩項發明專利，主要供應台灣面板廠，希望導入新製程降低碳排放，並取得歐盟CE認證以拓展歐洲市場。',
+  mfg:'公司為傳統金屬加工廠，成立15年，員工60人，近年接到德國車廠訂單需提升精度，計畫購置CNC加工設備並導入MES系統，同時希望輔導ISO 9001認證更新。',
+  bio:'我們是一家精準醫療新創，開發基因檢測試劑盒，已完成A輪募資，現進行TFDA查驗登記，需要臨床試驗費用補助及法規輔導。',
+  minutes:'【會議紀錄】2025年3月15日 業務策略會議\n出席：CEO、研發主任、業務總監\n討論事項：\n1. 智慧倉儲系統在台灣已有20家客戶，希望今年進軍東南亞\n2. 研發團隊提出需升級AI演算法，成本約300萬\n3. 業務表示東南亞展覽參展費用高\n4. HR提出需招募3位AI工程師\n決議：彙整補助申請需求，尋找政府資源'
+};
+
+const selectedPurposes = new Set();
+let inputMode = 'desc';
+
+function toggleChip(el) {
+  el.classList.toggle('active');
+  const t = el.textContent.trim();
+  if (el.classList.contains('active')) selectedPurposes.add(t);
+  else selectedPurposes.delete(t);
+}
+
+function switchMode(mode, btn) {
+  inputMode = mode;
+  document.querySelectorAll('.tab-sm').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('main-input').placeholder =
+    mode === 'minutes' ? '請貼入會議紀錄，AI 將自動萃取需求...' : '請描述公司核心技術、產品、當前挑戰與補助目標...';
+}
+
+function fillEx(k) {
+  document.getElementById('main-input').value = EXAMPLES[k];
+  updateCC();
+}
+
+function updateCC() {
+  document.getElementById('char-count').textContent = document.getElementById('main-input').value.length + ' 字';
+}
+
+document.getElementById('main-input').addEventListener('input', updateCC);
+
+function goStep(n) {
+  [1, 2, 3].forEach(i => {
+    document.getElementById('step-' + i).style.display = i === n ? 'block' : 'none';
+    const tab = document.getElementById('tab-' + i);
+    const sn = document.getElementById('sn-' + i);
+    tab.classList.toggle('active', i === n);
+    tab.classList.toggle('done', i < n);
+    sn.textContent = i < n ? '✓' : i;
+  });
+}
+
+function collectInfo() {
+  return {
+    name: document.getElementById('co-name').value || '（未填）',
+    industry: document.getElementById('co-industry').value || '（未選）',
+    size: document.getElementById('co-size').value || '（未選）',
+    age: document.getElementById('co-age').value || '（未選）',
+    market: document.getElementById('co-market').value || '（未選）',
+    rd: document.getElementById('co-rd').value || '（未選）',
+    prev: document.getElementById('co-prev').value || '（未選）',
+    revenue: document.getElementById('co-rev').value || '（未選）',
+    purposes: [...selectedPurposes],
+    description: document.getElementById('main-input').value.trim()
+  };
+}
+
+async function startMatching() {
+  const info = collectInfo();
+  if (!info.description) { alert('請填寫需求描述'); return; }
+
+  goStep(3);
+  const area = document.getElementById('results-area');
+  area.innerHTML = `<div class="loading">
+    <div class="spinner"></div>
+    <p style="font-size:14px;color:var(--text2)">AI 分析中，請稍候...</p>
+    <div class="loading-steps">
+      <div class="l-step active" id="ls1">分析廠商資料與產業屬性</div>
+      <div class="l-step" id="ls2">比對政府計畫資料庫</div>
+      <div class="l-step" id="ls3">評估各計畫申請可行性</div>
+      <div class="l-step" id="ls4">生成申請建議</div>
+    </div>
+  </div>`;
+
+  [800, 1600, 2400].forEach((d, i) => setTimeout(() => {
+    const el = document.getElementById('ls' + (i + 1));
+    const nx = document.getElementById('ls' + (i + 2));
+    if (el) { el.classList.remove('active'); el.classList.add('done'); }
+    if (nx) nx.classList.add('active');
+  }, d));
+
+  const sys = `你是台灣政府補助計畫的資深顧問。根據廠商資料推薦最適合的台灣政府補助計畫並評估可行性。
+只回傳 JSON，不要任何 markdown 或說明文字：
+{"company_profile":"廠商特性（20字內）","key_strengths":["優勢1","優勢2","優勢3"],"total_potential":"預估補助總額","grants":[{"name":"計畫名稱","short_name":"縮寫","agency":"主管機關","category":"類別","amount":"補助金額","deadline":"申請期間","match_score":"高|中|低","is_top_pick":true,"feasibility":數字0-100,"feasibility_reason":"說明（20字內）","match_reason":"配對原因（40字內）","description":"計畫簡介（50字內）","requirements":["要件1","要件2"],"cautions":["注意1"]}]}
+推薦 5-7 個真實存在的台灣計畫（SBIR、CITB、SIIR、數位轉型補助、出口拓展補助、研發替代役、就業補助等），按配對分數排列。is_top_pick 最多 2 個設 true。`;
+
+  const userMsg = `廠商：${info.name}｜產業：${info.industry}｜規模：${info.size}｜設立：${info.age}
+市場：${info.market}｜研發：${info.rd}｜補助經驗：${info.prev}｜年營業額：${info.revenue}
+申請目的：${info.purposes.join('、') || '未指定'}
+需求（${inputMode === 'minutes' ? '會議紀錄' : '業務描述'}）：
+${info.description}`;
+
+  try {
+    const res = await fetch('/api/match', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ system: sys, user: userMsg })
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error);
+    renderResults(data);
+  } catch (e) {
+    area.innerHTML = `<div class="no-results">
+      <p>分析時發生錯誤：${e.message}</p>
+      <button class="btn-sec" style="margin-top:12px" onclick="goStep(2)">← 返回重試</button>
+    </div>`;
+  }
+}
+
+function renderResults(data) {
+  const area = document.getElementById('results-area');
+  const grants = data.grants || [];
+  if (!grants.length) {
+    area.innerHTML = '<div class="no-results">未找到適合計畫，請嘗試更詳細的描述。<br><button class="btn-sec" style="margin-top:12px" onclick="goStep(2)">← 返回</button></div>';
+    return;
+  }
+
+  const cats = [...new Set(grants.map(g => g.category).filter(Boolean))];
+  const highCount = grants.filter(g => g.match_score === '高').length;
+  const avgFeas = Math.round(grants.reduce((s, g) => s + (g.feasibility || 0), 0) / grants.length);
+
+  let html = `<div class="results-top">
+    <div>
+      <div class="results-summary">${data.company_profile || '配對完成'}</div>
+      <div class="results-sub">找到 ${grants.length} 個適合計畫</div>
+    </div>
+    <button class="btn-sec" style="font-size:12px;padding:6px 12px" onclick="goStep(1)">重新填寫</button>
+  </div>`;
+
+  if (data.key_strengths?.length) {
+    html += `<div class="strengths">${data.key_strengths.map(s => `<span class="strength-tag">${s}</span>`).join('')}</div>`;
+  }
+
+  html += `<div class="stats-row">
+    <div class="stat-card"><div class="stat-num">${grants.length}</div><div class="stat-lbl">適合計畫數</div></div>
+    <div class="stat-card"><div class="stat-num">${highCount}</div><div class="stat-lbl">高度配對</div></div>
+    <div class="stat-card"><div class="stat-num">${avgFeas}%</div><div class="stat-lbl">平均可行性</div></div>
+  </div>`;
+
+  if (data.total_potential) {
+    html += `<div class="potential-bar">預估可申請補助總額：<strong>${data.total_potential}</strong>（依實際通過計畫而定）</div>`;
+  }
+
+  if (cats.length > 1) {
+    html += `<div class="filter-row"><span class="filter-label">篩選：</span>
+      <button class="filter-chip on" onclick="filterGrants('all',this)">全部</button>
+      ${cats.map(c => `<button class="filter-chip" onclick="filterGrants('${c}',this)">${c}</button>`).join('')}
+    </div>`;
+  }
+
+  html += `<div id="grants-list">` + grants.map(g => renderGrantCard(g)).join('') + `</div>`;
+  area.innerHTML = html;
+}
+
+function renderGrantCard(g) {
+  const bc = g.match_score === '高' ? 'b-high' : g.match_score === '中' ? 'b-mid' : 'b-low';
+  const bl = g.match_score === '高' ? '高度適合' : g.match_score === '中' ? '適合' : '可參考';
+  const fc = g.feasibility >= 70 ? '#3b6d11' : g.feasibility >= 45 ? '#854f0b' : '#a32d2d';
+  const reqs = (g.requirements || []).map(r => `<div class="req-item">• ${r}</div>`).join('');
+  const cautions = (g.cautions || []).map(c => `<div class="caution"><span>⚠</span>${c}</div>`).join('');
+  return `<div class="grant-card${g.is_top_pick ? ' top-pick' : ''}" data-cat="${g.category || ''}">
+    <div class="gc-header">
+      <div>
+        ${g.is_top_pick ? '<span class="badge b-top" style="display:inline-block;margin-bottom:6px">★ 最推薦</span><br>' : ''}
+        <div class="gc-title">${g.name}${g.short_name && g.short_name !== g.name ? ` (${g.short_name})` : ''}</div>
+      </div>
+      <div class="gc-badges"><span class="badge ${bc}">${bl}</span></div>
+    </div>
+    <div class="gc-meta">
+      <span class="meta-tag">${g.agency}</span>
+      <span class="meta-tag">${g.category}</span>
+    </div>
+    <div class="gc-desc">${g.description}</div>
+    <div class="gc-reason">${g.match_reason}</div>
+    <div class="feas-bar">
+      <div class="feas-label"><span>申請可行性</span><span style="font-weight:600;color:${fc}">${g.feasibility}%</span></div>
+      <div class="feas-track"><div class="feas-fill" style="width:${g.feasibility}%;background:${fc}"></div></div>
+      ${g.feasibility_reason ? `<div class="feas-note">${g.feasibility_reason}</div>` : ''}
+    </div>
+    ${reqs ? `<div class="req-list">${reqs}</div>` : ''}
+    ${cautions}
+    <div class="gc-footer">
+      <div>
+        <div class="gc-amount">${g.amount}</div>
+        <div class="gc-deadline">${g.deadline}</div>
+      </div>
+      <div class="gc-actions">
+        <button class="btn-apply" onclick="openNewTab('${encodeURIComponent(g.name)}')">準備申請</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function filterGrants(cat, btn) {
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('on'));
+  btn.classList.add('on');
+  document.querySelectorAll('.grant-card').forEach(c => {
+    c.style.display = (cat === 'all' || c.dataset.cat === cat) ? '' : 'none';
+  });
+}
+
+function openNewTab(encodedName) {
+  const name = decodeURIComponent(encodedName);
+  window.open('https://www.google.com/search?q=' + encodeURIComponent(name + ' 申請 台灣'), '_blank');
+}
+</script>
+</body>
+</html>
