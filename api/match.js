@@ -8,38 +8,39 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: '缺少必要參數' });
   }
 
-  // 這裡改用 Gemini 的環境變數名稱，免費額度較高
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
-    return res.status(500).json({ error: 'API Key 未設定，請在 Vercel 設定 GEMINI_API_KEY' });
+    return res.status(500).json({ error: 'API Key 未設定' });
   }
 
   try {
-    // 呼叫 Google Gemini 1.5 Flash API (免費方案)
-    const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+    // 修正後的 Gemini 1.5 Flash API 網址
+    const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+
+    const response = await fetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{
-          role: "user",
-          parts: [{ text: `${system}\n\n廠商資訊：\n${user}` }]
+          parts: [{ text: `${system}\n\n使用者需求：\n${user}` }]
         }],
         generationConfig: {
-          response_mime_type: "application/json", // 強制要求 JSON 格式回傳
+          response_mime_type: "application/json",
           temperature: 0.7,
         }
       })
     });
 
+    // 如果 Google 回傳錯誤，把具體訊息抓出來
     if (!response.ok) {
-      const err = await response.json();
-      return res.status(response.status).json({ error: 'Gemini API 錯誤' });
+      const errorData = await response.json();
+      console.error('Google API Error Details:', JSON.stringify(errorData));
+      return res.status(response.status).json({ error: `Google API 錯誤 (${response.status})` });
     }
 
     const data = await response.json();
     const text = data.candidates[0].content.parts[0].text;
     
-    // 解析 AI 回傳的文字並回傳給前端
     return res.status(200).json(JSON.parse(text));
 
   } catch (e) {
