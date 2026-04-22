@@ -7,11 +7,11 @@ export default async function handler(req, res) {
   const apiKey = process.env.GEMINI_API_KEY;
 
   if (!apiKey) {
-    return res.status(500).json({ error: 'API Key 未設定' });
+    return res.status(500).json({ error: 'API Key 未設定，請檢查 Vercel 環境變數' });
   }
 
   try {
-    // 改用 v1 版本路徑，這是目前最穩定的路徑
+    // 改用 v1 穩定版路徑，這能解決 "not found for API version" 的問題
     const url = `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
     const response = await fetch(url, {
@@ -32,10 +32,13 @@ export default async function handler(req, res) {
 
     if (!response.ok) {
       const msg = data.error?.message || `狀態碼 ${response.status}`;
-      return res.status(response.status).json({ error: `Google API 錯誤: ${msg}` });
+      return res.status(response.status).json({ error: `Google API 拒絕請求: ${msg}` });
     }
 
+    // 取得 AI 回傳內容
     const text = data.candidates[0].content.parts[0].text;
+    
+    // 清理可能包含在內的 Markdown 標籤
     const cleanText = text.replace(/```json|```/g, '').trim();
     
     return res.status(200).json(JSON.parse(cleanText));
